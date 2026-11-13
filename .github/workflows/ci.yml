@@ -1,0 +1,279 @@
+name: Pipeline CI/CD - Qualidade de Software
+
+# ==============================================================================
+# ETAPA 1: COMMIT OU PULL REQUEST -> PIPELINE ACIONADO
+# ==============================================================================
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  # ============================================================================
+  # ETAPA 2: DEPENDÊNCIAS E BUILD -> APLICAÇÃO PREPARADA OU VALIDADA
+  # ============================================================================
+  etapa-2-dependencias-e-build:
+    name: "Etapa 2: Dependências e Build (Aplicação preparada ou validada)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Ambiente PHP e Extensões
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, pdo_sqlite, mbstring, json
+          coverage: none
+
+      - name: 3. Validar Estrutura do Projeto e Dependências
+        run: |
+          echo "========================================================"
+          echo " ETAPA 2: DEPENDÊNCIAS E BUILD"
+          echo " Objetivo: Aplicação preparada ou validada"
+          echo "========================================================"
+          php -v
+          mkdir -p reports dist
+          echo "Verificando módulos essenciais da aplicação..."
+          test -d sistemaproducao || { echo "❌ Diretório sistemaproducao não encontrado"; exit 1; }
+          test -f sistemaproducao/auxilia/banco.sql || { echo "❌ Script banco.sql não encontrado"; exit 1; }
+          test -f sistemaproducao/config/database.php || { echo "❌ Arquivo database.php não encontrado"; exit 1; }
+          echo "✅ Ambiente e estrutura validados com sucesso!"
+
+  # ============================================================================
+  # ETAPA 3: ANÁLISE ESTÁTICA -> PROBLEMAS DE CÓDIGO IDENTIFICADOS
+  # ============================================================================
+  etapa-3-analise-estatica:
+    name: "Etapa 3: Análise Estática (Problemas de código identificados)"
+    runs-on: ubuntu-latest
+    needs: [etapa-2-dependencias-e-build]
+
+    steps:
+      - name: 1. Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Ambiente PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, mbstring
+
+      - name: 3. Executar Lint de Sintaxe e Auditoria Estática
+        run: |
+          echo "========================================================"
+          echo " ETAPA 3: ANÁLISE ESTÁTICA"
+          echo " Objetivo: Problemas de código identificados"
+          echo "========================================================"
+          mkdir -p reports
+
+          echo "🔍 1. Varredura de sintaxe PHP (php -l)..."
+          ERRORS=0
+          TOTAL=0
+          while IFS= read -r -d '' file; do
+            TOTAL=$((TOTAL + 1))
+            if ! php -l "$file" > /dev/null 2>&1; then
+              echo "❌ Erro de sintaxe em: $file"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find . -type f -name "*.php" -print0)
+
+          echo "Arquivos PHP analisados: $TOTAL" | tee reports/analise_estatica.txt
+          echo "Erros de sintaxe encontrados: $ERRORS" | tee -a reports/analise_estatica.txt
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ Falha na análise estática: $ERRORS arquivo(s) com erro."
+            exit 1
+          fi
+
+          echo "🔒 2. Auditoria de Segurança (Detecção de segredos e chaves)..."
+          BAD_FILES=$(find . -type f \( -name "*.pem" -o -name "*.key" -o -name "id_rsa*" \))
+          if [ -n "$BAD_FILES" ]; then
+            echo "❌ Arquivos sensíveis detectados:" | tee -a reports/analise_estatica.txt
+            echo "$BAD_FILES" | tee -a reports/analise_estatica.txt
+            exit 1
+          fi
+
+          echo "✅ Análise Estática concluída: 0 erros de sintaxe, 0 segredos expostos." | tee -a reports/analise_estatica.txt
+
+      - name: 4. Preservar Evidência da Análise Estática
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-analise-estatica
+          path: reports/analise_estatica.txt
+          retention-days: 7
+
+  # ============================================================================
+  # ETAPA 4: TESTES AUTOMATIZADOS -> COMPORTAMENTOS VERIFICADOS
+  # ============================================================================
+  etapa-4-testes-automatizados:
+    name: "Etapa 4: Testes Automatizados (Comportamentos verificados)"
+    runs-on: ubuntu-latest
+    needs: [etapa-2-dependencias-e-build]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: banco_artes
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: 1. Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Ambiente PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, pdo_sqlite, mbstring
+
+      - name: 3. Provisionar Banco de Dados MySQL
+        run: |
+          echo "📥 Localizando e importando dump banco.sql..."
+          SQL_FILE=$(find . -type f -name "banco.sql" | head -n 1)
+          if [ -z "$SQL_FILE" ]; then
+            echo "❌ Script banco.sql não localizado!"
+            exit 1
+          fi
+          mysql -h 127.0.0.1 -P 3306 -u root -proot banco_artes < "$SQL_FILE"
+          echo "✅ Banco de dados provisionado com sucesso!"
+
+      - name: 4. Executar Testes Automatizados
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: banco_artes
+          DB_USER: root
+          DB_PASS: root
+        run: |
+          echo "========================================================"
+          echo " ETAPA 4: TESTES AUTOMATIZADOS"
+          echo " Objetivo: Comportamentos verificados"
+          echo "========================================================"
+          mkdir -p reports
+
+          TEST_SCRIPT=$(find . -type f \( -name "ci_test.php" -o -name "ci_teste.php" \) | head -n 1)
+          echo "🧪 1. Executando Testes de Integração ($TEST_SCRIPT)..."
+          php "$TEST_SCRIPT" | tee reports/relatorio_testes_integracao.txt
+
+          RISK_SCRIPT=$(find . -type f -name "RiskBehaviorTestSuite.php" | head -n 1)
+          echo "🧪 2. Executando Suíte de Testes de Comportamento e Riscos ($RISK_SCRIPT)..."
+          php "$RISK_SCRIPT" | tee reports/relatorio_testes_risco.txt
+
+      - name: 5. Preservar Evidências dos Testes Automatizados
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-testes-automatizados
+          path: reports/relatorio_testes_*.txt
+          retention-days: 7
+
+  # ============================================================================
+  # ETAPA 5: QUALITY GATES -> DECISÃO DE APROVAR OU BLOQUEAR
+  # ============================================================================
+  etapa-5-quality-gates:
+    name: "Etapa 5: Quality Gates (Decisão de aprovar ou bloquear)"
+    runs-on: ubuntu-latest
+    needs: [etapa-3-analise-estatica, etapa-4-testes-automatizados]
+
+    steps:
+      - name: 1. Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Ambiente PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_sqlite, mbstring
+
+      - name: 3. Avaliar Portões de Qualidade (Quality Gate Enforcer)
+        run: |
+          echo "========================================================"
+          echo " ETAPA 5: QUALITY GATES"
+          echo " Objetivo: Decisão de aprovar ou bloquear"
+          echo "========================================================"
+          mkdir -p reports
+
+          QG_SCRIPT=$(find . -type f -name "quality_gate.php" | head -n 1)
+          if [ -z "$QG_SCRIPT" ]; then
+            echo "❌ Script quality_gate.php não localizado!"
+            exit 1
+          fi
+
+          echo "🛡️ Executando avaliação dos Quality Gates..."
+          php "$QG_SCRIPT" | tee reports/scorecard_quality_gate.txt
+
+      - name: 4. Preservar Evidência do Quality Gate
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-quality-gate
+          path: reports/scorecard_quality_gate.txt
+          retention-days: 7
+
+  # ============================================================================
+  # ETAPA 6: RELATÓRIOS/ARTEFATOS -> EVIDÊNCIAS PRESERVADAS PARA ANÁLISE
+  # ============================================================================
+  etapa-6-relatorios-artefatos:
+    name: "Etapa 6: Relatórios/Artefatos (Evidências preservadas para análise)"
+    runs-on: ubuntu-latest
+    needs: [etapa-5-quality-gates]
+    if: always()
+
+    steps:
+      - name: 1. Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: 2. Baixar Todos os Relatórios e Evidências
+        uses: actions/download-artifact@v4
+        with:
+          path: reports_consolidated
+
+      - name: 3. Consolidar Dossiê de Evidências
+        run: |
+          echo "========================================================"
+          echo " ETAPA 6: RELATÓRIOS/ARTEFATOS"
+          echo " Objetivo: Evidências preservadas para análise"
+          echo "========================================================"
+          mkdir -p evidencias_finais dist
+          cp -r reports_consolidated/* evidencias_finais/ 2>/dev/null || true
+
+          cat << 'EOF' > evidencias_finais/RESUMO_EXECUCAO_PIPELINE.md
+          # 📋 Dossiê de Evidências da Pipeline de Qualidade
+
+          | Etapa | Nome da Etapa | Objetivo / Resultado |
+          |---|---|---|
+          | **1** | Commit ou pull request | Pipeline acionado automaticamente |
+          | **2** | Dependências e build | Aplicação preparada ou validada |
+          | **3** | Análise estática | Problemas de código identificados (Sintaxe e Segurança) |
+          | **4** | Testes automatizados | Comportamentos verificados (MySQL, ACID, Regras de Negócio) |
+          | **5** | Quality gates | Decisão de aprovar ou bloquear (Critérios QG-01 a QG-04) |
+          | **6** | Relatórios/artefatos | Evidências preservadas para análise e pacote de release |
+          EOF
+
+          echo "Empacotando release de distribuição da aplicação..."
+          DIR_TO_PACK=$(find . -maxdepth 3 -type d -name "sistemaproducao" | head -n 1)
+          if [ -n "$DIR_TO_PACK" ]; then
+            zip -r dist/sistemaproducao-release.zip "$DIR_TO_PACK" -x "*.git*"
+          else
+            zip -r dist/sistemaproducao-release.zip . -x "*.git*"
+          fi
+
+      - name: 4. Publicar Dossiê de Evidências (Relatórios)
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-e-relatorios-qualidade
+          path: evidencias_finais/
+          retention-days: 14
+
+      - name: 5. Publicar Pacote de Release da Aplicação
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: actions/upload-artifact@v4
+        with:
+          name: sistemaproducao-release-zip
+          path: dist/sistemaproducao-release.zip
+          retention-days: 14

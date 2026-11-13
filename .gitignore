@@ -1,0 +1,36 @@
+# Dependências e Pacotes
+vendor/
+node_modules/
+
+# Arquivos de Build e Releases
+dist/
+build/
+*.zip
+*.tar.gz
+
+# Logs e Dados Temporários
+*.log
+.phpunit.result.cache
+
+# Configurações de IDE e Editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*~
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+
+# Chaves e Segredos Locais
+*.pem
+*.key
+id_rsa*
+.env.local

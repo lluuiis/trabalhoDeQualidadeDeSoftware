@@ -1,0 +1,12 @@
+/* Estilos para impressão */
+@media print {
+    /* Esconde tudo que não deve aparecer na impressão */
+    .no-print, .navbar, .form-filters, .modal {
+        display: none !important;
+    }
+
+    /* Garante que a área de impressão ocupe toda a página */
+    .printable-area {
+        display: block !important;
+    }
+}

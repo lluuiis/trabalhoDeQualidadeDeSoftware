@@ -1,0 +1,25 @@
+{
+  "name": "ufsm/trabalho-qualidade-software",
+  "description": "Sistema de Gestão de Produção e Vendas com Esteira DevOps e QAOps",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.0",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-pdo_sqlite": "*",
+    "ext-mbstring": "*"
+  },
+  "scripts": {
+    "lint": "php -l sistemaproducao/index.php",
+    "test:integration": "php sistemaproducao/tests/ci_test.php",
+    "test:risk": "php sistemaproducao/teste/RiskBehaviorTestSuite.php",
+    "quality-gate": "php sistemaproducao/teste/quality_gate.php",
+    "experiment": "php sistemaproducao/teste/run_experiment.php",
+    "test": [
+      "@test:integration",
+      "@test:risk",
+      "@quality-gate"
+    ]
+  }
+}
