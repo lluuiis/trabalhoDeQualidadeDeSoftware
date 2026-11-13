@@ -438,17 +438,17 @@ Em atendimento à Seção 8 e 9 das diretrizes normativas do projeto prático, a
 1. **Felipe:**
    - Modelagem e implementação do fluxo de CI/CD no GitHub Actions contemplando as 6 etapas normativas.
    - Configuração do arquivo declarativo de dependências (`composer.json`) e ambiente de execução PHP 8.x.
-   - Estruturação dos testes de integração automatizados com serviço MySQL e validação transacional PDO (`ci_test.php`).
+   - Estruturação do provisionamento do container de serviço MySQL e automação dos scripts de build e empacotamento da release.
 
 2. **Luis:**
+   - Desenvolvimento da suíte de testes automatizados de comportamento e risco crítico (`RiskBehaviorTestSuite.php` e `ci_test.php`).
    - Especificação e desenvolvimento do motor de Quality Gates (`quality_gate.php`) com lógica estrita de bloqueio e código de saída `exit(1)`.
    - Execução e coleta de logs do experimento prático de injeção de falhas (Cenário A vs Cenário B em `run_experiment.php`).
-   - Auditoria estática de código e segurança preventiva contra exposição de segredos e chaves criptográficas.
 
 3. **Gabrielle:**
-   - Redação do relatório técnico de engenharia e qualidade de software com fundamentação teórica em DevOps e QAOps.
-   - Elaboração da matriz de rastreabilidade entre riscos do negócio e casos de teste automatizados (`RiskBehaviorTestSuite.php`).
-   - Estruturação dos slides e do roteiro cronometrado de apresentação para a defesa técnica de 10 a 12 minutos.
+   - Redação integral, estruturação editorial e formatação textual técnica do Relatório Técnico de Engenharia de Software nas 9 seções normativas.
+   - Diagramação e formatação visual das tabelas de especificação formal dos Quality Gates e da matriz de rastreabilidade de riscos.
+   - Padronização estética da documentação do repositório (`README.md`, `REGISTRO_FINAL_DO_GRUPO.md`) e elaboração do roteiro de apresentação/defesa oral de 10 a 12 minutos.
 
 ---
 

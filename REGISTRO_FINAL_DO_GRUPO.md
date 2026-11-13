@@ -11,9 +11,9 @@
 | **Integrante 2** | Luis |
 | **Integrante 3** | Gabrielle |
 | **Repositório** | https://github.com/lluuiis/trabalhoDeQualidadeDeSoftware |
-| **Contribuição do integrante 1 (Felipe)** | Arquitetura e implementação da esteira de CI/CD (GitHub Actions) nas 6 etapas, configuração de dependências (`composer.json`), testes automatizados e integração com container MySQL. |
-| **Contribuição do integrante 2 (Luis)** | Implementação e codificação dos Quality Gates com poder de veto (`quality_gate.php`), execução dos experimentos de mutação (aprovado vs reprovado) e evidências. |
-| **Contribuição do integrante 3 (Gabrielle)** | Elaboração do relatório técnico de engenharia de software, mapeamento da matriz de riscos vs casos de teste e estruturação do roteiro de apresentação/defesa. |
+| **Contribuição do integrante 1 (Felipe)** | Arquitetura técnica da esteira de CI/CD (GitHub Actions) nas 6 etapas, configuração de dependências declarativas (`composer.json`), provisionamento do container MySQL e automação dos scripts de build e empacotamento de release. |
+| **Contribuição do integrante 2 (Luis)** | Desenvolvimento da suíte de testes automatizados de comportamento e riscos críticos (`RiskBehaviorTestSuite.php` e `ci_test.php`), codificação do motor dos Quality Gates com lógica de veto (`quality_gate.php`) e execução do experimento prático de injeção de falhas. |
+| **Contribuição do integrante 3 (Gabrielle)** | Redação integral, estruturação editorial e formatação textual técnica do Relatório Técnico de Engenharia de Software nas 9 seções normativas, diagramação visual das tabelas e fichas dos Quality Gates, e padronização editorial do repositório e roteiro de defesa. |
 | **Limitação mais importante** | Ausência de testes de interface ponta a ponta (E2E no navegador) e necessidade de refatoração do armazenamento de senhas do sistema legado para hash moderno (Argon2id/Bcrypt). |
 | **Confirmação** | [X] Todos os integrantes do trio revisaram o repositório, as evidências e o relatório técnico. |
 
